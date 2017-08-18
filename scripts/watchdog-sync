@@ -1,0 +1,20 @@
+#!/bin/bash
+set -e
+
+SCRIPT_NAME=$(basename $0)
+DEST_DIR=${DEST_DIR:-.}
+
+if [ -z $1 ]; then
+    echo "${SCRIPT_NAME} user@host" 1>&2
+    exit 1
+fi;
+
+host=$1
+shift
+
+base=$(basename $(pwd))
+
+watchmedo shell-command \
+    --recursive --wait --drop \
+    --ignore-directories --ignore-patterns '*.idea*;*.git*;*.pyc' \
+    --command "time rsync -av $@ ./ ${host}:${DEST_DIR}/${base}/; date"
