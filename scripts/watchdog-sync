@@ -17,4 +17,4 @@ base=$(basename $(pwd))
 watchmedo shell-command \
     --recursive --wait --drop \
     --ignore-directories --ignore-patterns '*.idea*;*.git*;*.pyc' \
-    --command "time rsync -av $@ ./ ${host}:${DEST_DIR}/${base}/; date"
+    --command "time rsync -av --delete $@ ./ ${host}:${DEST_DIR}/${base}/; date"
