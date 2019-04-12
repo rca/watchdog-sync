@@ -1,20 +1,158 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env python3
+import logging
+import os
+import shlex
+import sys
+import time
 
-SCRIPT_NAME=$(basename $0)
-DEST_DIR=${DEST_DIR:-.}
+import sh
 
-if [ -z $1 ]; then
-    echo "${SCRIPT_NAME} user@host" 1>&2
-    exit 1
-fi;
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
 
-host=$1
-shift
 
-base=$(basename $(pwd))
+class BufferedEventHandler(FileSystemEventHandler):
+    """
+    Buffers all events found in an internal list
+    """
+    def __init__(self, *args, ignore=None, **kwargs):
+        super().__init__(*args, **kwargs)
 
-watchmedo shell-command \
-    --recursive --wait --drop \
-    --ignore-directories --ignore-patterns '*.idea*;*.git*;*.pyc' \
-    --command "time rsync -av --delete $@ ./ ${host}:${DEST_DIR}/${base}/; date"
+        self.events = []
+        self.ignore = ignore or []
+
+    def add_event(self, change_type, what, src_path, dest_path=None):
+        event = {
+            'change_type': change_type,
+            'what': what,
+            'src_path': src_path,
+            'dest_path': dest_path,
+        }
+
+        self.events.append(event)
+        logging.info(event)
+
+    def is_ignored(self, src_path) -> bool:
+        if src_path.startswith('./'):
+            src_path = src_path[2:]
+
+        for item in self.ignore:
+            if src_path.startswith(item):
+                return True
+
+        return False
+
+    def on_moved(self, event):
+        src_path = event.src_path
+        if self.is_ignored(src_path):
+            return
+
+        super().on_moved(event)
+
+        change_type = 'Moved'
+        what = 'directory' if event.is_directory else 'file'
+        dest_path = event.dest_path
+
+        self.add_event(what, src_path, dest_path=dest_path)
+
+    def on_created(self, event):
+        src_path = event.src_path
+        if self.is_ignored(src_path):
+            return
+
+        super().on_created(event)
+
+        change_type = 'Created'
+        what = 'directory' if event.is_directory else 'file'
+
+        self.add_event(change_type, what, src_path)
+
+    def on_deleted(self, event):
+        src_path = event.src_path
+        if self.is_ignored(src_path):
+            return
+
+        super().on_deleted(event)
+
+        change_type = 'Deleted'
+        what = 'directory' if event.is_directory else 'file'
+
+        self.add_event(change_type, what, src_path)
+
+    def on_modified(self, event):
+        src_path = event.src_path
+        if self.is_ignored(src_path):
+            return
+
+        super().on_modified(event)
+
+        change_type = 'Modified'
+        what = 'directory' if event.is_directory else 'file'
+
+        self.add_event(change_type, what, src_path)
+
+
+def run_command(command: str):
+    command_split = shlex.split(command)
+
+    proc_fn = getattr(sh, command_split[0])
+
+    return proc_fn(*command_split[1:], _fg=True)
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s - %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S')
+
+    basename = os.path.basename(os.getcwd())
+    dest_dir = os.environ.get('DEST_DIR', '.')
+    event_handler = BufferedEventHandler(ignore=['.git'])
+    host = sys.argv[1]
+    path = '.'
+
+    observer = Observer()
+    observer.schedule(event_handler, path, recursive=True)
+    observer.start()
+
+    count = 0
+
+    try:
+        while True:
+            _count = len(event_handler.events)
+
+            if _count != count:
+                event_handler.events = []
+                _count = len(event_handler.events)
+
+                run_command(f"time rsync -av --exclude '*.egg-info/' --delete {' '.join(sys.argv[2:])} ./ {host}:{dest_dir}/{basename}/")
+                run_command('date')
+
+            count = _count
+
+            time.sleep(1)
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
+
+# #!/bin/bash
+# set -e
+#
+# SCRIPT_NAME=$(basename $0)
+# DEST_DIR=${DEST_DIR:-.}
+#
+# if [ -z $1 ]; then
+#     echo "${SCRIPT_NAME} user@host" 1>&2
+#     exit 1
+# fi;
+#
+# host=$1
+# shift
+#
+# base=$(basename $(pwd))
+#
+# watchmedo shell-command \
+#     --recursive --wait --drop \
+#     --ignore-directories --ignore-patterns '*.idea*;*.git*;*.pyc' \
+#     --command "time rsync -av --exclude '*.egg-info/' --delete $@ ./ ${host}:${DEST_DIR}/${base}/; date"
+#
+#
