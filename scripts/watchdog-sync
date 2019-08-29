@@ -95,6 +95,9 @@ class BufferedEventHandler(FileSystemEventHandler):
 def run_command(command: str):
     command_split = shlex.split(command)
 
+    logger = logging.getLogger('run_command')
+    logger.debug(command)
+
     proc_fn = getattr(sh, command_split[0])
 
     return proc_fn(*command_split[1:], _fg=True)
