@@ -100,7 +100,8 @@ def run_command(command: str):
     return proc_fn(*command_split[1:], _fg=True)
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO,
+    LOG_LEVEL = getattr(logging, os.environ.get('LOG_LEVEL', 'INFO').upper())
+    logging.basicConfig(level=LOG_LEVEL,
                         format='%(asctime)s - %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S')
 
