@@ -124,8 +124,12 @@ if __name__ == "__main__":
                 event_handler.events = []
                 _count = len(event_handler.events)
 
-                run_command(f"time rsync -av --exclude '*.egg-info/' --delete {' '.join(sys.argv[2:])} ./ {host}:{dest_dir}/{basename}/")
-                run_command('date')
+                try:
+                    run_command(f"time rsync -av --exclude '*.egg-info/' --delete {' '.join(sys.argv[2:])} ./ {host}:{dest_dir}/{basename}/")
+                    run_command('date')
+                except Exception as exc:
+                    logger = logging.getLogger()
+                    logger.warning(f'command failed with error {exc}')
 
             count = _count
 
