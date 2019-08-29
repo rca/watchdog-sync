@@ -110,17 +110,15 @@ if __name__ == "__main__":
                         datefmt='%Y-%m-%d %H:%M:%S')
 
     basename = os.path.basename(os.getcwd())
-    dest_dir = os.environ.get('DEST_DIR', '.')
+    dest_dir = os.environ.get('WATCHDOG_DEST_DIR', '.')
     event_handler = BufferedEventHandler(ignore=['.git'])
     host = sys.argv[1]
     path = '.'
 
     rsync_delete_arg = ''
-    delete_dest_files = conversion.convert_bool(os.environ.get('DELETE_DEST_FILES', 'True'))
+    delete_dest_files = conversion.convert_bool(os.environ.get('WATCHDOG_DELETE_DEST_FILES', 'False'))
     if delete_dest_files:
         rsync_delete_arg = '--delete'
-
-
 
     observer = Observer()
     observer.schedule(event_handler, path, recursive=True)
