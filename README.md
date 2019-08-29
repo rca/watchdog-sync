@@ -15,6 +15,25 @@ cd /path/to/project
 watchdog-sync username@hostname
 ```
 
+## Configuration options
+
+### WATCHDOG_DEST_DIR=.
+
+When the files should not land in the home directory, but elsewhere:
+
+```
+WATCHDOG_DEST_DIR=/path/to/parent/directory watchdog-sync username@hostname
+```
+
+
+### WATCHDOG_DELETE_DEST_FILES=false
+
+Remote files that do not exist locally are preserved by default; to delete them, set to `true`
+
+```
+WATCHDOG_DELETE_DEST_FILES=true watchdog-sync username@hostname
+```
+
 
 # Installation
 
