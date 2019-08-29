@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import conversion
 import logging
 import os
 import shlex
@@ -114,6 +115,13 @@ if __name__ == "__main__":
     host = sys.argv[1]
     path = '.'
 
+    rsync_delete_arg = ''
+    delete_dest_files = conversion.convert_bool(os.environ.get('DELETE_DEST_FILES', 'True'))
+    if delete_dest_files:
+        rsync_delete_arg = '--delete'
+
+
+
     observer = Observer()
     observer.schedule(event_handler, path, recursive=True)
     observer.start()
@@ -129,7 +137,7 @@ if __name__ == "__main__":
                 _count = len(event_handler.events)
 
                 try:
-                    run_command(f"time rsync -av --exclude '*.egg-info/' --delete {' '.join(sys.argv[2:])} ./ {host}:{dest_dir}/{basename}/")
+                    run_command(f"time rsync -av --exclude '*.egg-info/' {rsync_delete_arg} {' '.join(sys.argv[2:])} ./ {host}:{dest_dir}/{basename}/")
                     run_command('date')
                 except Exception as exc:
                     logger = logging.getLogger()
