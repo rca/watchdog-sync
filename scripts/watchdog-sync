@@ -54,7 +54,7 @@ class BufferedEventHandler(FileSystemEventHandler):
         what = 'directory' if event.is_directory else 'file'
         dest_path = event.dest_path
 
-        self.add_event(what, src_path, dest_path=dest_path)
+        self.add_event(change_type, what, src_path, dest_path=dest_path)
 
     def on_created(self, event):
         src_path = event.src_path
